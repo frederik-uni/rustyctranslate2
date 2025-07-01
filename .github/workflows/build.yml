@@ -10,16 +10,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: linux-x86_64
-            runs-on: ubuntu-latest
+          # - name: linux-x86_64
+          #   runs-on: ubuntu-latest
           - name: linux-arm64
             runs-on: ubuntu-24.04-arm
           - name: macos-arm64
             runs-on: macos-latest
           - name: macos-x86_64
             runs-on: macos-13
-          # - name: windows-x86_64
-          #   runs-on: windows-latest
+          - name: windows-x86_64
+            runs-on: windows-latest
 
     name: Build on ${{ matrix.name }}
     runs-on: ${{ matrix.runs-on }}
@@ -31,6 +31,47 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libopenblas-dev
+
+      - name: Install CUDA, cuDNN, Intel oneAPI, and oneDNN
+        if: matrix.name == 'windows-x86_64'
+        shell: pwsh
+        run: |
+          $env:CUDA_ROOT = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.2"
+          $env:CUDNN_ROOT = "C:/Program Files/NVIDIA/CUDNN/v9.1"
+
+          # Install CUDA
+          curl --netrc-optional -L -o cuda.exe https://developer.download.nvidia.com/compute/cuda/12.2.2/local_installers/cuda_12.2.2_537.13_windows.exe
+          Start-Process -Wait -FilePath .\cuda.exe -ArgumentList "-s nvcc_12.2 cudart_12.2 cublas_dev_12.2 curand_dev_12.2"
+          Remove-Item cuda.exe
+
+          # Install cuDNN
+          curl --netrc-optional -L -o cudnn.exe https://developer.download.nvidia.com/compute/cudnn/9.1.0/local_installers/cudnn_9.1.0_windows.exe
+          Start-Process -Wait -FilePath .\cudnn.exe -ArgumentList "-s"
+          Start-Sleep -Seconds 10
+          Remove-Item -Recurse -Force "$env:CUDNN_ROOT/bin/11.8","$env:CUDNN_ROOT/lib/11.8","$env:CUDNN_ROOT/include/11.8"
+          Move-Item "$env:CUDNN_ROOT/bin/12.4/*" "$env:CUDNN_ROOT/bin/"
+          Move-Item "$env:CUDNN_ROOT/lib/12.4/*" "$env:CUDNN_ROOT/lib/"
+          Move-Item "$env:CUDNN_ROOT/include/12.4/*" "$env:CUDNN_ROOT/include/"
+          Remove-Item "$env:CUDNN_ROOT/bin/12.4","$env:CUDNN_ROOT/lib/12.4","$env:CUDNN_ROOT/include/12.4" -Recurse -Force
+          Copy-Item "$env:CUDNN_ROOT/*" "$env:CUDA_ROOT" -Recurse
+          Remove-Item cudnn.exe
+
+          # Install Intel oneAPI MKL BaseKit
+          curl --netrc-optional -L -o webimage.exe https://registrationcenter-download.intel.com/akdlm/irc_nas/19078/w_BaseKit_p_2023.0.0.25940_offline.exe
+          Start-Process -Wait -FilePath .\webimage.exe -ArgumentList "-s", "-x", "-f", "webimage_extracted", "--log", "extract.log"
+          Remove-Item webimage.exe
+          Start-Process -Wait -FilePath .\webimage_extracted\bootstrapper.exe -ArgumentList "-s", "--action", "install", "--components=intel.oneapi.win.mkl.devel", "--eula=accept", "-p=NEED_VS2017_INTEGRATION=0", "-p=NEED_VS2019_INTEGRATION=0", "--log-dir=."
+
+          # Build oneDNN
+          $env:ONEDNN_VERSION = "3.1.1"
+          curl --netrc-optional -L -O "https://github.com/oneapi-src/oneDNN/archive/refs/tags/v$env:ONEDNN_VERSION.tar.gz"
+          tar xf "v$env:ONEDNN_VERSION.tar.gz"
+          Remove-Item "v$env:ONEDNN_VERSION.tar.gz"
+          cd "oneDNN-$env:ONEDNN_VERSION"
+          cmake -DCMAKE_BUILD_TYPE=Release -DONEDNN_LIBRARY_TYPE=STATIC -DONEDNN_BUILD_EXAMPLES=OFF -DONEDNN_BUILD_TESTS=OFF -DONEDNN_ENABLE_WORKLOAD=INFERENCE -DONEDNN_ENABLE_PRIMITIVE="CONVOLUTION;REORDER" -DONEDNN_BUILD_GRAPH=OFF .
+          cmake --build . --config Release --target install --parallel 6
+          cd ..
+          Remove-Item -Recurse -Force "oneDNN-$env:ONEDNN_VERSION"
 
       - name: Install dependencies (Linux x86_64 only)
         if: matrix.name == 'linux-x86_64'
