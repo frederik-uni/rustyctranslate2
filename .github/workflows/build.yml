@@ -45,7 +45,7 @@ jobs:
           curl -fSsL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub | sudo gpg --dearmor | sudo tee /usr/share/keyrings/nvidia-drivers.gpg > /dev/null 2>&1
           echo 'deb [signed-by=/usr/share/keyrings/nvidia-drivers.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/ /' | sudo tee /etc/apt/sources.list.d/nvidia-drivers.list
           sudo apt update
-          sudo apt install nvidia-driver-535 cuda-drivers-535 cuda
+          sudo apt install cuda
           sudo apt install intel-basekit
           sudo apt install intel-oneapi-dnnl-devel
           sudo apt install openmpi-bin libopenmpi-dev
