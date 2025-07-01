@@ -10,8 +10,8 @@ jobs:
     strategy:
       matrix:
         include:
-          # - name: linux-x86_64
-          #   runs-on: ubuntu-latest
+          - name: linux-x86_64
+            runs-on: ubuntu-latest
           - name: linux-arm64
             runs-on: ubuntu-24.04-arm
           - name: macos-arm64
@@ -35,63 +35,20 @@ jobs:
       - name: Install dependencies (Linux x86_64 only)
         if: matrix.name == 'linux-x86_64'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            pkg-config \
-            curl \
-            wget \
-            git \
-            gpg \
-            libopenblas-dev \
-            libnccl-dev \
-            libcurand-dev \
-            libcusparse-dev \
-            libcuda-dev \
-            libssl-dev \
-            libprotobuf-dev \
-            protobuf-compiler \
-            python3 \
-            python3-pip
+          wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+          | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
 
-          # CUDA (via NVIDIA APT repo)
-          sudo apt-get install -y nvidia-cuda-toolkit
+          # add signed entry to apt sources and configure the APT client to use Intel repository:
+          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
 
-          # Install Intel oneAPI MKL (APT-based)
-          wget https://apt.repos.intel.com/intel-gpg-keys/Intel-GPG-KEY-Public.asc
-          sudo apt-key add Intel-GPG-KEY-Public.asc
-          echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
-          sudo apt-get update
-          sudo apt-get install -y intel-oneapi-mkl-devel-2023.2.0 || echo "MKL optional"
-
-          # Build and install oneDNN from source
-          ONEDNN_VERSION=3.1.1
-          curl -LO https://github.com/oneapi-src/oneDNN/archive/refs/tags/v${ONEDNN_VERSION}.tar.gz
-          tar xf v${ONEDNN_VERSION}.tar.gz && rm v${ONEDNN_VERSION}.tar.gz
-          cd oneDNN-${ONEDNN_VERSION}
-          cmake -DCMAKE_BUILD_TYPE=Release \
-                -DONEDNN_LIBRARY_TYPE=STATIC \
-                -DONEDNN_BUILD_EXAMPLES=OFF \
-                -DONEDNN_BUILD_TESTS=OFF \
-                -DONEDNN_ENABLE_WORKLOAD=INFERENCE \
-                -DONEDNN_ENABLE_PRIMITIVE="CONVOLUTION;REORDER" \
-                -DONEDNN_BUILD_GRAPH=OFF .
-          make -j$(nproc)
-          sudo make install
-          cd .. && rm -rf oneDNN-${ONEDNN_VERSION}
-
-          # Build and install OpenMPI from source
-          OPENMPI_VERSION=4.1.6
-          curl -LO https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-${OPENMPI_VERSION}.tar.bz2
-          tar xf openmpi-${OPENMPI_VERSION}.tar.bz2 && rm openmpi-${OPENMPI_VERSION}.tar.bz2
-          cd openmpi-${OPENMPI_VERSION}
-          ./configure
-          make -j$(nproc)
-          sudo make install
-          cd .. && rm -rf openmpi-${OPENMPI_VERSION}
-          echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/openmpi.conf
-          sudo ldconfig
+          sudo apt install build-essential gcc dirmngr ca-certificates software-properties-common apt-transport-https dkms curl -y
+          curl -fSsL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub | sudo gpg --dearmor | sudo tee /usr/share/keyrings/nvidia-drivers.gpg > /dev/null 2>&1
+          echo 'deb [signed-by=/usr/share/keyrings/nvidia-drivers.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/ /' | sudo tee /etc/apt/sources.list.d/nvidia-drivers.list
+          sudo apt update
+          sudo apt install nvidia-driver-535 cuda-drivers-535 cuda
+          sudo apt install intel-basekit
+          sudo apt install intel-oneapi-dnnl-devel
+          sudo apt install openmpi-bin libopenmpi-dev
 
       - name: Install dependencies (macOS x86_64 only)
         if: matrix.name == 'macos-x86_64'
