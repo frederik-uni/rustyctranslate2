@@ -49,6 +49,7 @@ jobs:
           sudo apt install intel-basekit
           sudo apt install intel-oneapi-dnnl-devel
           sudo apt install openmpi-bin libopenmpi-dev
+          dpkg -L intel-oneapi-dnnl-devel
 
       - name: Install dependencies (macOS x86_64 only)
         if: matrix.name == 'macos-x86_64'
