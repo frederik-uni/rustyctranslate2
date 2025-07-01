@@ -19,18 +19,24 @@ jobs:
           - name: macos-x86_64
             runs-on: macos-13
           - name: windows-x86_64
-            runs-on: windows-latest
+            runs-on: windows-2019
 
     name: Build on ${{ matrix.name }}
     runs-on: ${{ matrix.runs-on }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install dependencies (Linux x86_64 only)
+        if: matrix.name == 'linux-x86_64'
+        run: ./scripts/install-linux-apt-x86_64.sh
+
+      - name: Install dependencies (macOS x86_64 only)
+        if: matrix.name == 'macos-x86_64'
+        run: ./scripts/install-macos-brew-x86_64.sh
+
       - name: Install libopenblas-dev (Linux ARM64 only)
         if: matrix.name == 'linux-arm64'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libopenblas-dev
+        run: ./scripts/install-linux-apt-arm64.sh
 
       - name: Install CUDA, cuDNN, Intel oneAPI, and oneDNN
         if: matrix.name == 'windows-x86_64'
@@ -45,7 +51,7 @@ jobs:
           Remove-Item cuda.exe
 
           # Install cuDNN
-          curl --netrc-optional -L -o cudnn.exe https://developer.download.nvidia.com/compute/cudnn/9.1.0/local_installers/cudnn_9.1.0_windows.exe
+          curl --netrc-optional -L -C - --retry 5 -o cudnn.exe https://developer.download.nvidia.com/compute/cudnn/9.1.0/local_installers/cudnn_9.1.0_windows.exe
           Start-Process -Wait -FilePath .\cudnn.exe -ArgumentList "-s"
           Start-Sleep -Seconds 10
           Remove-Item -Recurse -Force "$env:CUDNN_ROOT/bin/11.8","$env:CUDNN_ROOT/lib/11.8","$env:CUDNN_ROOT/include/11.8"
@@ -59,14 +65,14 @@ jobs:
           Remove-Item cudnn.exe
 
           # Install Intel oneAPI MKL BaseKit
-          curl --netrc-optional -L -o webimage.exe https://registrationcenter-download.intel.com/akdlm/irc_nas/19078/w_BaseKit_p_2023.0.0.25940_offline.exe
+          curl --netrc-optional -L -C - --retry 5 -o webimage.exe https://registrationcenter-download.intel.com/akdlm/irc_nas/19078/w_BaseKit_p_2023.0.0.25940_offline.exe
           Start-Process -Wait -FilePath .\webimage.exe -ArgumentList "-s", "-x", "-f", "webimage_extracted", "--log", "extract.log"
           Remove-Item webimage.exe
           Start-Process -Wait -FilePath .\webimage_extracted\bootstrapper.exe -ArgumentList "-s", "--action", "install", "--components=intel.oneapi.win.mkl.devel", "--eula=accept", "-p=NEED_VS2017_INTEGRATION=0", "-p=NEED_VS2019_INTEGRATION=0", "--log-dir=."
 
           # Build oneDNN
           $env:ONEDNN_VERSION = "3.1.1"
-          curl --netrc-optional -L -O "https://github.com/oneapi-src/oneDNN/archive/refs/tags/v$env:ONEDNN_VERSION.tar.gz"
+          curl --netrc-optional -L -C - --retry 5 -O "https://github.com/oneapi-src/oneDNN/archive/refs/tags/v$env:ONEDNN_VERSION.tar.gz"
           tar xf "v$env:ONEDNN_VERSION.tar.gz"
           Remove-Item "v$env:ONEDNN_VERSION.tar.gz"
           cd "oneDNN-$env:ONEDNN_VERSION"
@@ -74,36 +80,6 @@ jobs:
           cmake --build . --config Release --target install --parallel 6
           cd ..
           Remove-Item -Recurse -Force "oneDNN-$env:ONEDNN_VERSION"
-
-      - name: Install dependencies (Linux x86_64 only)
-        if: matrix.name == 'linux-x86_64'
-        run: |
-          wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
-          | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
-
-          # add signed entry to apt sources and configure the APT client to use Intel repository:
-          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
-
-          sudo apt install build-essential gcc dirmngr ca-certificates software-properties-common apt-transport-https dkms curl -y
-          curl -fSsL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub | sudo gpg --dearmor | sudo tee /usr/share/keyrings/nvidia-drivers.gpg > /dev/null 2>&1
-          echo 'deb [signed-by=/usr/share/keyrings/nvidia-drivers.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/ /' | sudo tee /etc/apt/sources.list.d/nvidia-drivers.list
-          sudo apt update
-          sudo apt install cuda
-          sudo apt install intel-basekit
-          sudo apt install intel-oneapi-dnnl-devel
-          sudo apt install openmpi-bin libopenmpi-dev
-          source /opt/intel/oneapi/setvars.sh --dnnl-configuration=cpu_dpcpp_gpu_dpcpp
-
-      - name: Install dependencies (macOS x86_64 only)
-        if: matrix.name == 'macos-x86_64'
-        run: |
-          ONEAPI_INSTALLER_URL=https://registrationcenter-download.intel.com/akdlm/IRC_NAS/cd013e6c-49c4-488b-8b86-25df6693a9b7/m_BaseKit_p_2023.2.0.49398.dmg
-          wget -q $ONEAPI_INSTALLER_URL
-          hdiutil attach -noverify -noautofsck $(basename $ONEAPI_INSTALLER_URL)
-          sudo /Volumes/$(basename $ONEAPI_INSTALLER_URL .dmg)/bootstrapper.app/Contents/MacOS/bootstrapper --silent --eula accept --components intel.oneapi.mac.mkl.devel
-
-          brew update
-          brew install onednn
 
       - name: Build with cargo
         run: cargo build --verbose
