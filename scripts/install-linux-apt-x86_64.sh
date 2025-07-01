@@ -12,6 +12,13 @@ echo 'deb [signed-by=/usr/share/keyrings/nvidia-drivers.gpg] https://developer.d
 sudo apt update
 sudo apt install cuda
 sudo apt install intel-basekit
-sudo apt install intel-oneapi-dnnl-devel
 sudo apt install openmpi-bin libopenmpi-dev
-source /opt/intel/oneapi/setvars.sh --dnnl-configuration=cpu_dpcpp_gpu_dpcpp
+
+ONEDNN_VERSION=3.1.1
+curl -L -O https://github.com/oneapi-src/oneDNN/archive/refs/tags/v${ONEDNN_VERSION}.tar.gz
+tar xf *.tar.gz && rm *.tar.gz
+cd oneDNN-*
+cmake -DCMAKE_BUILD_TYPE=Release -DONEDNN_LIBRARY_TYPE=STATIC -DONEDNN_BUILD_EXAMPLES=OFF -DONEDNN_BUILD_TESTS=OFF -DONEDNN_ENABLE_WORKLOAD=INFERENCE -DONEDNN_ENABLE_PRIMITIVE="CONVOLUTION;REORDER" -DONEDNN_BUILD_GRAPH=OFF .
+make -j$(nproc) install
+cd ..
+rm -r oneDNN-*
