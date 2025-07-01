@@ -10,8 +10,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: linux-x86_64
-            runs-on: ubuntu-latest
+          # - name: linux-x86_64
+          #   runs-on: ubuntu-latest
           - name: linux-arm64
             runs-on: ubuntu-24.04-arm
           - name: macos-arm64
@@ -25,6 +25,12 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install libopenblas-dev (Linux ARM64 only)
+        if: matrix.name == 'linux-arm64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libopenblas-dev
 
       - name: Install dependencies (Linux x86_64 only)
         if: matrix.name == 'linux-x86_64'
