@@ -53,7 +53,9 @@ jobs:
           Move-Item "$env:CUDNN_ROOT/lib/12.4/*" "$env:CUDNN_ROOT/lib/"
           Move-Item "$env:CUDNN_ROOT/include/12.4/*" "$env:CUDNN_ROOT/include/"
           Remove-Item "$env:CUDNN_ROOT/bin/12.4","$env:CUDNN_ROOT/lib/12.4","$env:CUDNN_ROOT/include/12.4" -Recurse -Force
-          Copy-Item "$env:CUDNN_ROOT/*" "$env:CUDA_ROOT" -Recurse
+          Copy-Item "$env:CUDNN_ROOT/bin/*" "$env:CUDA_ROOT/bin/" -Recurse -Force
+          Copy-Item "$env:CUDNN_ROOT/lib/*" "$env:CUDA_ROOT/lib/" -Recurse -Force
+          Copy-Item "$env:CUDNN_ROOT/include/*" "$env:CUDA_ROOT/include/" -Recurse -Force
           Remove-Item cudnn.exe
 
           # Install Intel oneAPI MKL BaseKit
