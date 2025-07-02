@@ -116,7 +116,7 @@ impl Default for TranslationOptions {
 mod ffi {
 
     unsafe extern "C++" {
-        include!("rustyctranslate2/include/translator.h");
+        include!("ctranslate2/include/translator.h");
         type MyTranslator;
         type MyDataClass;
         type CTranslateOptions;
