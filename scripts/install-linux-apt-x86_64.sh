@@ -28,5 +28,6 @@ cd ..
 rm -r oneDNN-*
 
 sudo apt install libnccl2 libnccl-dev
+sudo apt install intel-mkl
 sudo apt install openmpi-bin libopenmpi-dev
 sudo apt clean
