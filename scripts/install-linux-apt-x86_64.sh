@@ -12,8 +12,10 @@ echo 'deb [signed-by=/usr/share/keyrings/nvidia-drivers.gpg] https://developer.d
 wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb
 sudo dpkg -i cuda-keyring_1.0-1_all.deb
 sudo apt update
-sudo apt install cuda
+sudo apt install cuda cudnn
 sudo apt install intel-basekit
+sudo apt clean
+sudo apt autoremove --purge
 
 ONEDNN_VERSION=3.1.1
 curl -L -O https://github.com/oneapi-src/oneDNN/archive/refs/tags/v${ONEDNN_VERSION}.tar.gz
@@ -28,3 +30,5 @@ rm -r oneDNN-*
 
 sudo apt install libnccl2 libnccl-dev
 sudo apt install openmpi-bin libopenmpi-dev
+sudo apt clean
+sudo apt autoremove --purge
