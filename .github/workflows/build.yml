@@ -19,7 +19,7 @@ jobs:
           - name: macos-x86_64
             runs-on: macos-13
           # - name: windows-x86_64
-          #   runs-on: windows-2019
+          #   runs-on: windows-latest
 
     name: Build on ${{ matrix.name }}
     runs-on: ${{ matrix.runs-on }}
@@ -29,6 +29,12 @@ jobs:
       - name: Install dependencies (Linux x86_64 only)
         if: matrix.name == 'linux-x86_64'
         run: ./scripts/install-linux-apt-x86_64.sh
+
+      - name: Set env
+        run: |
+          echo "CMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/onednn-install" >> $GITHUB_ENV
+          echo "LIBRARY_PATH=$GITHUB_WORKSPACE/onednn-install/lib" >> $GITHUB_ENV
+          echo "CPATH=$GITHUB_WORKSPACE/onednn-install/include" >> $GITHUB_ENV
 
       - name: Install dependencies (macOS x86_64 only)
         if: matrix.name == 'macos-x86_64'
