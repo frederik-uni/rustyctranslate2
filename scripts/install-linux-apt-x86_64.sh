@@ -13,9 +13,7 @@ wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/
 sudo dpkg -i cuda-keyring_1.0-1_all.deb
 sudo apt update
 sudo apt install cuda
-sudo apt install libnccl2 libnccl-dev
 sudo apt install intel-basekit
-sudo apt install openmpi-bin libopenmpi-dev
 
 ONEDNN_VERSION=3.1.1
 curl -L -O https://github.com/oneapi-src/oneDNN/archive/refs/tags/v${ONEDNN_VERSION}.tar.gz
@@ -27,3 +25,6 @@ cmake  -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" -DCMAKE_BUILD_TYPE=Release -DONEDNN
 make -j$(nproc) install
 cd ..
 rm -r oneDNN-*
+
+sudo apt install libnccl2 libnccl-dev
+sudo apt install openmpi-bin libopenmpi-dev
