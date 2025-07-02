@@ -15,7 +15,6 @@ sudo apt update
 sudo apt install cuda cudnn
 sudo apt install intel-basekit
 sudo apt clean
-sudo apt autoremove --purge
 
 ONEDNN_VERSION=3.1.1
 curl -L -O https://github.com/oneapi-src/oneDNN/archive/refs/tags/v${ONEDNN_VERSION}.tar.gz
@@ -31,4 +30,3 @@ rm -r oneDNN-*
 sudo apt install libnccl2 libnccl-dev
 sudo apt install openmpi-bin libopenmpi-dev
 sudo apt clean
-sudo apt autoremove --purge
