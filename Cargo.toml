@@ -1,6 +1,8 @@
 [package]
 name = "ctranslate2"
 version = "1.0.0"
+description = "Rust wrapper for CTranslate2"
+license = "MIT"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
